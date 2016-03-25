@@ -11,6 +11,12 @@
 * Install via npm
 `npm i react-native-vlc-player --save`
 
+##### Configure vlc library
+
+ Download file [here](https://github.com/ghondar/react-native-vlc-player/raw/master/android/vlc/libvlc.aar)
+
+ And put libvlc.aar on `node_modules/react-native-vlc-player/android/vlc`
+
 * Add dependency to `android/settings.gradle`
 ```
 ...
