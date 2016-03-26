@@ -63,7 +63,7 @@ import com.ghondar.vlcplayer.*;  // <--- import
 #### Usage
 
 ```Javascript
-import React, { Component, View, Text, TouchableHighlight } from 'react-native'
+import React, { AppRegistry, StyleSheet, Component, View, Text, TouchableHighlight } from 'react-native'
 
 import { play } from 'react-native-vlc-player'
 
@@ -72,17 +72,13 @@ class Example extends Component {
     super(props, context)
   }
 
-  onStart() {
-    play('/storage/emulated/0/video.mp4')
-  }
-
   render() {
 
     return (
       <View style={styles.container}>
 
         <TouchableHighlight
-          onPress={this.onStart}>
+          onPress={() => { play('/storage/emulated/0/example.avi') }}>
             <Text >Play Video!</Text>
         </TouchableHighlight>
 
@@ -91,8 +87,16 @@ class Example extends Component {
   }
 }
 
-export default Example
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5FCFF',
+  }
+});
 
+AppRegistry.registerComponent('example', () => Example);
 ```
 
 #### LICENSE
