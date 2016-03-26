@@ -1,4 +1,4 @@
 var { NativeModules } = require('react-native');
-var { VlcPlayer } = NativeModules;
+var { VLCPlayer } = NativeModules;
 
-module.exports = VlcPlayer;
+module.exports = VLCPlayer;
