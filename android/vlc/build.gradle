@@ -18,14 +18,8 @@ android {
     }
 }
 
-repositories {
-    flatDir {
-        dirs '.'
-    }
-}
-
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile "com.facebook.react:react-native:+"
-    compile(name:'libvlc', ext:'aar')
+    compile project(":libvlc")
 }
