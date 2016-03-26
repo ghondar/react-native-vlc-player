@@ -13,13 +13,16 @@
 
 ##### Configure vlc library
 
- Download file [here](https://github.com/ghondar/react-native-vlc-player/raw/master/android/vlc/libvlc.aar)
+ Download file [here](https://github.com/ghondar/react-native-vlc-player/raw/master/android/libvlc/libvlc.aar)
 
- And put libvlc.aar on `node_modules/react-native-vlc-player/android/vlc`
+ And put libvlc.aar on `node_modules/react-native-vlc-player/android/libvlc`
 
 ##### Add dependency to `android/settings.gradle`
 ```
 ...
+include ':libvlc'
+project(':libvlc').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-vlc-player/android/libvlc')
+
 include ':react-native-vlc-player'
 project(':react-native-vlc-player').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-vlc-player/android/vlc')
 ```
@@ -62,7 +65,7 @@ import com.ghondar.vlcplayer.*;  // <--- import
 ```Javascript
 import React, { Component, View, Text, TouchableHighlight } from 'react-native'
 
-import { play } from './lib/VLCPlayer'
+import { play } from 'react-native-vlc-player'
 
 class Example extends Component {
   constructor(props, context) {
