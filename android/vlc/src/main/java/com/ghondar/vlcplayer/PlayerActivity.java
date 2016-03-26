@@ -1,17 +1,16 @@
-package com.vlcplayer;
+package com.ghondar.vlcplayer;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.ViewGroup.LayoutParams;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import org.videolan.libvlc.IVLCVout;
@@ -49,15 +48,28 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.player);
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setBaselineAligned(false);
+        layout.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+
+        FrameLayout layout1 = new FrameLayout(this);
+        layout1.setLayoutParams(new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+
+        mSurface = new SurfaceView(this);
+        mSurface.setLayoutParams(new FrameLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT, Gravity.CENTER));
+
+        layout1.addView(mSurface);
+
+        layout.addView(layout1);
+
+        setContentView(layout);
 
         // Receive path to play from intent
         Intent intent = getIntent();
         mFilePath = intent.getExtras().getString(LOCATION);
 
         Log.d(TAG, "Playing back " + mFilePath);
-
-        mSurface = (SurfaceView) findViewById(R.id.surface);
         holder = mSurface.getHolder();
         //holder.addCallback(this);
     }
