@@ -1,20 +1,19 @@
 package com.ghondar.vlcplayer;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
-import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
-import android.view.Gravity;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
-import android.view.ViewGroup.LayoutParams;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -22,13 +21,11 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.vlcplayer.R;
-import android.R.color;
 
 import org.videolan.libvlc.IVLCVout;
 import org.videolan.libvlc.LibVLC;
 import org.videolan.libvlc.Media;
 import org.videolan.libvlc.MediaPlayer;
-import org.videolan.libvlc.util.AndroidUtil;
 import org.videolan.libvlc.util.VLCUtil;
 
 import java.lang.ref.WeakReference;
@@ -41,7 +38,6 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
     private String mFilePath;
 
     // display surface
-    // display surface
     private LinearLayout layout;
     private FrameLayout vlcOverlay;
     private SurfaceView mSurface;
@@ -53,9 +49,22 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
     // media player
     private LibVLC libvlc;
     private MediaPlayer mMediaPlayer = null;
-    private int mVideoWidth;
     private int mVideoHeight;
-    private final static int VideoSizeChanged = -1;
+    private int mVideoWidth;
+    private int mVideoVisibleHeight;
+    private int mVideoVisibleWidth;
+    private int mSarNum;
+    private int mSarDen;
+
+    private static final int SURFACE_BEST_FIT = 0;
+    private static final int SURFACE_FIT_HORIZONTAL = 1;
+    private static final int SURFACE_FIT_VERTICAL = 2;
+    private static final int SURFACE_FILL = 3;
+    private static final int SURFACE_16_9 = 4;
+    private static final int SURFACE_4_3 = 5;
+    private static final int SURFACE_ORIGINAL = 6;
+
+    private int mCurrentSize = SURFACE_BEST_FIT;
 
     /*************
      * Activity
@@ -75,9 +84,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
         // Receive path to play from intent
         Intent intent = getIntent();
         mFilePath = intent.getExtras().getString(LOCATION);
-//        holder = mSurface.getHolder();
         playMovie();
-        //holder.addCallback(this);
     }
 
     public void playMovie() {
@@ -85,7 +92,6 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
             return ;
         layout.setVisibility(View.VISIBLE);
         holder = mSurface.getHolder();
-//        holder.addCallback(this);
         createPlayer(mFilePath);
     }
 
@@ -149,7 +155,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        setSize(mVideoWidth, mVideoHeight);
+        changeSurfaceLayout();
     }
 
     @Override
@@ -157,7 +163,6 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
         mMediaPlayer.play();
         vlcButtonPlayPause.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_pause_over_video));
         super.onResume();
-//        createPlayer(mFilePath);
     }
 
     @Override
@@ -165,58 +170,106 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
         mMediaPlayer.pause();
         vlcButtonPlayPause.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_play_over_video));
         super.onPause();
-//        releasePlayer();
     }
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         releasePlayer();
+        super.onDestroy();
     }
 
     /*************
      * Surface
      *************/
-    private void setSize(int width, int height) {
-        mVideoWidth = width;
-        mVideoHeight = height;
-        if (mVideoWidth * mVideoHeight <= 1)
-            return;
+    @SuppressWarnings("SuspiciousNameCombination")
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
+    private void changeSurfaceSize(boolean message) {
+        int screenWidth = getWindow().getDecorView().getWidth();
+        int screenHeight = getWindow().getDecorView().getHeight();
 
-        if(holder == null || mSurface == null)
-            return;
-
-        // get screen size
-        int w = getWindow().getDecorView().getWidth();
-        int h = getWindow().getDecorView().getHeight();
-
-        // getWindow().getDecorView() doesn't always take orientation into
-        // account, we have to correct the values
-        boolean isPortrait = getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
-        if (w > h && isPortrait || w < h && !isPortrait) {
-            int i = w;
-            w = h;
-            h = i;
+        if (mMediaPlayer != null) {
+            final IVLCVout vlcVout = mMediaPlayer.getVLCVout();
+            vlcVout.setWindowSize(screenWidth, screenHeight);
         }
 
-        float videoAR = (float) mVideoWidth / (float) mVideoHeight;
-        float screenAR = (float) w / (float) h;
+        double displayWidth = screenWidth, displayHeight = screenHeight;
 
-        if (screenAR < videoAR)
-            h = (int) (w / videoAR);
-        else
-            w = (int) (h * videoAR);
+        if (screenWidth < screenHeight) {
+            displayWidth = screenHeight;
+            displayHeight = screenWidth;
+        }
 
-        // force surface buffer size
-        if (holder != null)
-            holder.setFixedSize(mVideoWidth, mVideoHeight);
+        // sanity check
+        if (displayWidth * displayHeight <= 1 || mVideoWidth * mVideoHeight <= 1) {
+            return;
+        }
+
+        // compute the aspect ratio
+        double aspectRatio, visibleWidth;
+        if (mSarDen == mSarNum) {
+            /* No indication about the density, assuming 1:1 */
+            visibleWidth = mVideoVisibleWidth;
+            aspectRatio = (double) mVideoVisibleWidth / (double) mVideoVisibleHeight;
+        } else {
+            /* Use the specified aspect ratio */
+            visibleWidth = mVideoVisibleWidth * (double) mSarNum / mSarDen;
+            aspectRatio = visibleWidth / mVideoVisibleHeight;
+        }
+
+        // compute the display aspect ratio
+        double displayAspectRatio = displayWidth / displayHeight;
+
+        switch (mCurrentSize) {
+            case SURFACE_BEST_FIT:
+                if (displayAspectRatio < aspectRatio)
+                    displayHeight = displayWidth / aspectRatio;
+                else
+                    displayWidth = displayHeight * aspectRatio;
+                break;
+            case SURFACE_FIT_HORIZONTAL:
+                displayHeight = displayWidth / aspectRatio;
+                break;
+            case SURFACE_FIT_VERTICAL:
+                displayWidth = displayHeight * aspectRatio;
+                break;
+            case SURFACE_FILL:
+                break;
+            case SURFACE_16_9:
+                aspectRatio = 16.0 / 9.0;
+                if (displayAspectRatio < aspectRatio)
+                    displayHeight = displayWidth / aspectRatio;
+                else
+                    displayWidth = displayHeight * aspectRatio;
+                break;
+            case SURFACE_4_3:
+                aspectRatio = 4.0 / 3.0;
+                if (displayAspectRatio < aspectRatio)
+                    displayHeight = displayWidth / aspectRatio;
+                else
+                    displayWidth = displayHeight * aspectRatio;
+                break;
+            case SURFACE_ORIGINAL:
+                displayHeight = mVideoVisibleHeight;
+                displayWidth = visibleWidth;
+                break;
+        }
 
         // set display size
-        LayoutParams lp = mSurface.getLayoutParams();
-        lp.width = w;
-        lp.height = h;
+        int finalWidth = (int) Math.ceil(displayWidth * mVideoWidth / mVideoVisibleWidth);
+        int finalHeight = (int) Math.ceil(displayHeight * mVideoHeight / mVideoVisibleHeight);
+
+        SurfaceHolder holder = mSurface.getHolder();
+        holder.setFixedSize(finalWidth, finalHeight);
+
+        ViewGroup.LayoutParams lp = mSurface.getLayoutParams();
+        lp.width = finalWidth;
+        lp.height = finalHeight;
         mSurface.setLayoutParams(lp);
         mSurface.invalidate();
+    }
+
+    private void changeSurfaceLayout() {
+        changeSurfaceSize(false);
     }
 
     /*************
@@ -343,7 +396,11 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
         // store video size
         mVideoWidth = width;
         mVideoHeight = height;
-        setSize(mVideoWidth, mVideoHeight);
+        mVideoVisibleWidth  = visibleWidth;
+        mVideoVisibleHeight = visibleHeight;
+        mSarNum = sarNum;
+        mSarDen = sarDen;
+        changeSurfaceLayout();
     }
 
     @Override
