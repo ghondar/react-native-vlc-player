@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
@@ -21,6 +22,7 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.vlcplayer.R;
+import android.R.color;
 
 import org.videolan.libvlc.IVLCVout;
 import org.videolan.libvlc.LibVLC;
@@ -41,7 +43,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
     // display surface
     // display surface
     private LinearLayout layout;
-    private FrameLayout frameLayout2;
+    private FrameLayout vlcOverlay;
     private SurfaceView mSurface;
     private SurfaceHolder holder;
     private ImageView vlcButtonPlayPause;
@@ -62,36 +64,13 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setBaselineAligned(false);
-        layout.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+        setContentView(R.layout.player);
 
-        FrameLayout frameLayout1 = new FrameLayout(this);
-        frameLayout1.setLayoutParams(new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+        layout = (LinearLayout) findViewById(R.id.vlc_container);
+        mSurface = (SurfaceView) findViewById(R.id.vlc_surface);
 
-        mSurface = new SurfaceView(this);
-        mSurface.setLayoutParams(new FrameLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT, Gravity.CENTER));
-
-        frameLayout2 = new FrameLayout(this);
-        frameLayout2.setLayoutParams(new FrameLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
-
-        int paddingPixel = 80;
-        float density = this.getApplication().getResources().getDisplayMetrics().density;
-        int paddingDp = (int)(paddingPixel * density);
-
-        vlcButtonPlayPause = new ImageView(this);
-        vlcButtonPlayPause.setLayoutParams(new FrameLayout.LayoutParams(paddingDp, paddingDp, Gravity.CENTER));
-        vlcButtonPlayPause.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_pause_over_video));
-
-        frameLayout2.addView(vlcButtonPlayPause);
-
-        frameLayout1.addView(mSurface);
-        frameLayout1.addView(frameLayout2);
-
-        layout.addView(frameLayout1);
-
-        setContentView(layout);
+        vlcOverlay = (FrameLayout) findViewById(R.id.vlc_overlay);
+        vlcButtonPlayPause = (ImageView) findViewById(R.id.vlc_button_play_pause);
 
         // Receive path to play from intent
         Intent intent = getIntent();
@@ -150,7 +129,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
         runnableOverlay = new Runnable() {
             @Override
             public void run() {
-                frameLayout2.setVisibility(View.GONE);
+                vlcOverlay.setVisibility(View.GONE);
                 toggleFullscreen(true);
             }
         };
@@ -159,7 +138,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
         layout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                frameLayout2.setVisibility(View.VISIBLE);
+                vlcOverlay.setVisibility(View.VISIBLE);
 
                 handlerOverlay.removeCallbacks(runnableOverlay);
                 handlerOverlay.postDelayed(runnableOverlay, timeToDisappear);
@@ -175,12 +154,16 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
 
     @Override
     protected void onResume() {
+        mMediaPlayer.play();
+        vlcButtonPlayPause.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_pause_over_video));
         super.onResume();
 //        createPlayer(mFilePath);
     }
 
     @Override
     protected void onPause() {
+        mMediaPlayer.pause();
+        vlcButtonPlayPause.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_play_over_video));
         super.onPause();
 //        releasePlayer();
     }
@@ -225,7 +208,8 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
             w = (int) (h * videoAR);
 
         // force surface buffer size
-        holder.setFixedSize(mVideoWidth, mVideoHeight);
+        if (holder != null)
+            holder.setFixedSize(mVideoWidth, mVideoHeight);
 
         // set display size
         LayoutParams lp = mSurface.getLayoutParams();

@@ -1,0 +1,44 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+    android:layout_height="match_parent" android:background="@android:color/black"
+    tools:context="com.ghondar.vlcplayer.PlayerActivity">
+
+    <LinearLayout
+        android:id="@+id/vlc_container"
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent">
+
+        <FrameLayout
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:visibility="visible"
+            android:background="@android:color/black"
+            >
+
+            <SurfaceView
+                android:id="@+id/vlc_surface"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                />
+            <FrameLayout
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:background="#69000000"
+                android:id="@+id/vlc_overlay">
+
+                <ImageView
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:id="@+id/vlc_button_play_pause"
+                    android:src="@drawable/ic_action_pause_over_video"
+                    android:layout_gravity="center" />
+
+            </FrameLayout>
+
+
+        </FrameLayout>
+    </LinearLayout>
+
+</FrameLayout>
