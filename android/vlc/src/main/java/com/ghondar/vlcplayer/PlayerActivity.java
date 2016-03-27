@@ -8,7 +8,9 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.ViewGroup.LayoutParams;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -31,6 +33,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
 
     // display surface
     // display surface
+    private LinearLayout layout;
     private SurfaceView mSurface;
     private SurfaceHolder holder;
 
@@ -48,7 +51,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        LinearLayout layout = new LinearLayout(this);
+        layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setBaselineAligned(false);
         layout.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
@@ -72,6 +75,26 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
         Log.d(TAG, "Playing back " + mFilePath);
         holder = mSurface.getHolder();
         //holder.addCallback(this);
+    }
+
+    private void toggleFullscreen(boolean fullscreen)
+    {
+        WindowManager.LayoutParams attrs = getWindow().getAttributes();
+        if (fullscreen)
+        {
+            attrs.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
+            layout.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        }
+        else
+        {
+            attrs.flags &= ~WindowManager.LayoutParams.FLAG_FULLSCREEN;
+        }
+        getWindow().setAttributes(attrs);
     }
 
     @Override
@@ -175,6 +198,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
             Media m = new Media(libvlc, media);
             mMediaPlayer.setMedia(m);
             mMediaPlayer.play();
+            toggleFullscreen(true);
         } catch (Exception e) {
             Toast.makeText(this, "Error creating player!", Toast.LENGTH_LONG).show();
         }
