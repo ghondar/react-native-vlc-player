@@ -4,6 +4,8 @@
 
 *Only Android support now.*
 
+![](https://media.giphy.com/media/l4hLFPgXI7ipAAMGk/giphy.gif)
+
 #### Integrate
 
 ##### Android
