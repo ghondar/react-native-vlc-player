@@ -78,7 +78,7 @@ class Example extends Component {
       <View style={styles.container}>
 
         <TouchableHighlight
-          onPress={() => { play('/storage/emulated/0/example.avi') }}>
+          onPress={() => { play('file:///storage/emulated/0/example.avi') }}>
             <Text >Play Video!</Text>
         </TouchableHighlight>
 

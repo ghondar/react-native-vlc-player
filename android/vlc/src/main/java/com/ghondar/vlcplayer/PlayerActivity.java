@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -331,7 +332,8 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
             }
             //vout.setSubtitlesView(mSurfaceSubtitles);
 
-            Media m = new Media(libvlc, media);
+            Uri uri = Uri.parse(media);
+            Media m = new Media(libvlc, uri);
             mMediaPlayer.setMedia(m);
             mMediaPlayer.play();
         } catch (Exception e) {
