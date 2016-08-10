@@ -37,29 +37,17 @@ dependencies {
     compile project(':react-native-vlc-player')
 }
 ```
-##### Register module in `MainActivity.java`
+##### Register module in `MainApplication.java`
 ```Java
 import com.ghondar.vlcplayer.*;  // <--- import
 
 @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        mReactRootView = new ReactRootView(this);
-
-        mReactInstanceManager = ReactInstanceManager.builder()
-                .setApplication(getApplication())
-                .setBundleAssetName("index.android.bundle")
-                .setJSMainModuleName("index.android")
-                .addPackage(new VLCPlayerPackage())  // <------- here
-                .addPackage(new MainReactPackage())
-                .setUseDeveloperSupport(BuildConfig.DEBUG)
-                .setInitialLifecycleState(LifecycleState.RESUMED)
-                .build();
-
-        mReactRootView.startReactApplication(mReactInstanceManager, "doubanbook", null);
-
-        setContentView(mReactRootView);
-    }
+ protected List<ReactPackage> getPackages() {
+   return Arrays.<ReactPackage>asList(
+      new VLCPlayerPackage(),  // <------- here
+      new MainReactPackage()
+   );
+ }
 ```
 
 #### Usage
