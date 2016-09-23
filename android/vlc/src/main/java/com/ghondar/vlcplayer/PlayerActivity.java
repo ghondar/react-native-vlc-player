@@ -32,7 +32,7 @@ import org.videolan.libvlc.util.VLCUtil;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 
-public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVLC.HardwareAccelerationError {
+public class PlayerActivity extends Activity implements IVLCVout.Callback {
 
     public final static String LOCATION = "srcVideo";
 
@@ -313,7 +313,6 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
             options.add("-vv");
 
             libvlc = new LibVLC(options);
-            libvlc.setOnHardwareAccelerationError(this);
 
             holder.setKeepScreenOn(true);
 
@@ -440,9 +439,11 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback, LibVL
     }
 
     @Override
-    public void eventHardwareAccelerationError() {
+    public void onHardwareAccelerationError(IVLCVout vout) {
         // Handle errors with hardware acceleration
+        //Log.e(TAG, "Error with hardware acceleration");
         this.releasePlayer();
         Toast.makeText(this, "Error with hardware acceleration", Toast.LENGTH_LONG).show();
     }
+
 }
