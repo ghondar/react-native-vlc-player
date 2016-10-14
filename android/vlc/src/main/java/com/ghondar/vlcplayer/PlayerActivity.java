@@ -241,7 +241,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
 
         switch (mCurrentSize) {
             case SURFACE_BEST_FIT:
-                if(counter > 1)
+                if(counter > 2)
                     Toast.makeText(this, "Best Fit", Toast.LENGTH_SHORT).show();
                 if (displayAspectRatio < aspectRatio)
                     displayHeight = displayWidth / aspectRatio;
@@ -427,6 +427,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
         mVideoVisibleHeight = visibleHeight;
         mSarNum = sarNum;
         mSarDen = sarDen;
+        changeSurfaceLayout();
     }
 
     @Override
