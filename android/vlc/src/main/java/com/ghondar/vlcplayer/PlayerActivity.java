@@ -59,6 +59,8 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
     private int mSarNum;
     private int mSarDen;
 
+    private int counter = 0;
+
     private static final int SURFACE_BEST_FIT = 0;
     private static final int SURFACE_FIT_HORIZONTAL = 1;
     private static final int SURFACE_FIT_VERTICAL = 2;
@@ -105,12 +107,12 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
         if (fullscreen)
         {
             attrs.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
-            layout.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            layout.setSystemUiVisibility(View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                     | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                     | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                     | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN);
         }
         else
         {
@@ -235,22 +237,30 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
         // compute the display aspect ratio
         double displayAspectRatio = displayWidth / displayHeight;
 
+        counter ++;
+
         switch (mCurrentSize) {
             case SURFACE_BEST_FIT:
+                if(counter > 1)
+                    Toast.makeText(this, "Best Fit", Toast.LENGTH_SHORT).show();
                 if (displayAspectRatio < aspectRatio)
                     displayHeight = displayWidth / aspectRatio;
                 else
                     displayWidth = displayHeight * aspectRatio;
                 break;
             case SURFACE_FIT_HORIZONTAL:
+                Toast.makeText(this, "Fit Horizontal", Toast.LENGTH_SHORT).show();
                 displayHeight = displayWidth / aspectRatio;
                 break;
             case SURFACE_FIT_VERTICAL:
+                Toast.makeText(this, "Fit Horizontal", Toast.LENGTH_SHORT).show();
                 displayWidth = displayHeight * aspectRatio;
                 break;
             case SURFACE_FILL:
+                Toast.makeText(this, "Fill", Toast.LENGTH_SHORT).show();
                 break;
             case SURFACE_16_9:
+                Toast.makeText(this, "16:9", Toast.LENGTH_SHORT).show();
                 aspectRatio = 16.0 / 9.0;
                 if (displayAspectRatio < aspectRatio)
                     displayHeight = displayWidth / aspectRatio;
@@ -258,6 +268,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
                     displayWidth = displayHeight * aspectRatio;
                 break;
             case SURFACE_4_3:
+                Toast.makeText(this, "4:3", Toast.LENGTH_SHORT).show();
                 aspectRatio = 4.0 / 3.0;
                 if (displayAspectRatio < aspectRatio)
                     displayHeight = displayWidth / aspectRatio;
@@ -265,6 +276,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
                     displayWidth = displayHeight * aspectRatio;
                 break;
             case SURFACE_ORIGINAL:
+                Toast.makeText(this, "Original", Toast.LENGTH_SHORT).show();
                 displayHeight = mVideoVisibleHeight;
                 displayWidth = visibleWidth;
                 break;
@@ -415,7 +427,6 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
         mVideoVisibleHeight = visibleHeight;
         mSarNum = sarNum;
         mSarDen = sarDen;
-        changeSurfaceLayout();
     }
 
     @Override
