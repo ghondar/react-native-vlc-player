@@ -17,6 +17,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -44,6 +45,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
     private SurfaceView mSurface;
     private SurfaceHolder holder;
     private ImageView vlcButtonPlayPause;
+    private ImageButton vlcButtonScale;
     private Handler handlerOverlay;
     private Runnable runnableOverlay;
 
@@ -81,6 +83,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
 
         vlcOverlay = (FrameLayout) findViewById(R.id.vlc_overlay);
         vlcButtonPlayPause = (ImageView) findViewById(R.id.vlc_button_play_pause);
+        vlcButtonScale = (ImageButton) findViewById(R.id.vlc_button_scale);
 
         // Receive path to play from intent
         Intent intent = getIntent();
@@ -128,6 +131,18 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
                     mMediaPlayer.play();
                     vlcButtonPlayPause.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_pause_over_video));
                 }
+            }
+        });
+
+        vlcButtonScale.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mCurrentSize < SURFACE_ORIGINAL) {
+                    mCurrentSize++;
+                } else {
+                    mCurrentSize = 0;
+                }
+                changeSurfaceSize(true);
             }
         });
 
@@ -330,7 +345,6 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
                 vout.attachViews();
             }
             //vout.setSubtitlesView(mSurfaceSubtitles);
-
             Uri uri = Uri.parse(media);
             Media m = new Media(libvlc, uri);
             mMediaPlayer.setMedia(m);
@@ -441,9 +455,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
     @Override
     public void onHardwareAccelerationError(IVLCVout vout) {
         // Handle errors with hardware acceleration
-        //Log.e(TAG, "Error with hardware acceleration");
         this.releasePlayer();
         Toast.makeText(this, "Error with hardware acceleration", Toast.LENGTH_LONG).show();
     }
-
 }
