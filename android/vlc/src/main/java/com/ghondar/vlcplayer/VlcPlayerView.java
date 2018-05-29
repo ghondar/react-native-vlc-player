@@ -2,19 +2,28 @@ package com.ghondar.vlcplayer;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
-import android.content.Intent;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
-import android.graphics.PixelFormat;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.SurfaceTexture;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.preference.PreferenceManager;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.text.TextUtils;
+import android.util.AttributeSet;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -30,21 +39,24 @@ import org.videolan.libvlc.Media;
 import org.videolan.libvlc.MediaPlayer;
 import org.videolan.libvlc.util.VLCUtil;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Locale;
 
-@Deprecated
-public class PlayerActivity extends Activity implements IVLCVout.Callback {
+public class VlcPlayerView extends FrameLayout implements IVLCVout.Callback {
 
     public final static String LOCATION = "srcVideo";
-
-    private String mFilePath;
 
     // display surface
     private LinearLayout layout;
     private FrameLayout vlcOverlay;
-    private SurfaceView mSurface;
-    private SurfaceHolder holder;
+    private TextureView mTextureView;
+    private SurfaceTexture mSurfaceTexture;
     private ImageView vlcButtonPlayPause;
     private ImageButton vlcButtonScale;
     private Handler handlerOverlay;
@@ -71,55 +83,86 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
     private static final int SURFACE_ORIGINAL = 6;
 
     private int mCurrentSize = SURFACE_BEST_FIT;
+    private String url;
 
-    /*************
-     * Activity
-     *************/
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.player);
+    public VlcPlayerView(@NonNull Context context) {
+        super(context);
+        initLayout();
+    }
 
+    public VlcPlayerView(@NonNull Context context, @Nullable AttributeSet attrs) {
+        super(context, attrs);
+        initLayout();
+    }
+
+    private void initLayout() {
+        View view = LayoutInflater.from(getContext()).inflate(R.layout.player, this, false);
+        addView(view, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
         layout = (LinearLayout) findViewById(R.id.vlc_container);
-        mSurface = (SurfaceView) findViewById(R.id.vlc_surface);
+        mTextureView = (TextureView) findViewById(R.id.vlc_surface);
 
         vlcOverlay = (FrameLayout) findViewById(R.id.vlc_overlay);
         vlcButtonPlayPause = (ImageView) findViewById(R.id.vlc_button_play_pause);
         vlcButtonScale = (ImageButton) findViewById(R.id.vlc_button_scale);
+        mTextureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+            @Override
+            public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int i, int i1) {
+                mSurfaceTexture = surfaceTexture;
+                createPlayer(url);
+            }
 
-        // Receive path to play from intent
-        Intent intent = getIntent();
-        mFilePath = intent.getExtras().getString(LOCATION);
-        playMovie();
+            @Override
+            public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
+
+            }
+
+            @Override
+            public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
+                mSurfaceTexture = null;
+                return true;
+            }
+
+            @Override
+            public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
+
+            }
+        });
+        // 开启硬件加速
+        if (getContext() instanceof Activity) {
+            ((Activity) getContext()).getWindow().setFlags(
+                    WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
+                    WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
+        }
     }
 
-    public void playMovie() {
+    public void playMovie(String url) {
         if (mMediaPlayer != null && mMediaPlayer.isPlaying())
-            return ;
+            return;
         layout.setVisibility(View.VISIBLE);
-        holder = mSurface.getHolder();
-        createPlayer(mFilePath);
+        this.url = url;
+        if (mSurfaceTexture != null) {
+            createPlayer(url);
+        }
     }
 
-    private void toggleFullscreen(boolean fullscreen)
-    {
-        WindowManager.LayoutParams attrs = getWindow().getAttributes();
-        if (fullscreen)
-        {
-            attrs.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
-            layout.setSystemUiVisibility(View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_FULLSCREEN);
+    public void toggleFullscreen(boolean fullscreen) {
+        if (getContext() instanceof Activity) {
+            Activity activity = (Activity) getContext();
+            WindowManager.LayoutParams attrs = activity.getWindow().getAttributes();
+            if (fullscreen) {
+                attrs.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
+                layout.setSystemUiVisibility(View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN);
+            } else {
+                attrs.flags &= ~WindowManager.LayoutParams.FLAG_FULLSCREEN;
+            }
+            activity.getWindow().setAttributes(attrs);
         }
-        else
-        {
-            attrs.flags &= ~WindowManager.LayoutParams.FLAG_FULLSCREEN;
-        }
-        getWindow().setAttributes(attrs);
     }
 
     private void setupControls() {
@@ -127,6 +170,9 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
         vlcButtonPlayPause.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                if (mMediaPlayer == null) {
+                    return;
+                }
                 if (mMediaPlayer.isPlaying()) {
                     mMediaPlayer.pause();
                     vlcButtonPlayPause.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_play_over_video));
@@ -148,7 +194,6 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
                 changeSurfaceSize(true);
             }
         });
-
         // OVERLAY
         handlerOverlay = new Handler();
         runnableOverlay = new Runnable() {
@@ -172,29 +217,93 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
     }
 
     @Override
-    public void onConfigurationChanged(Configuration newConfig) {
+    protected void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         changeSurfaceLayout();
     }
 
-    @Override
-    protected void onResume() {
-        mMediaPlayer.play();
-        vlcButtonPlayPause.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_pause_over_video));
-        super.onResume();
+    /**
+     * 恢复播放
+     */
+    public void resumePlay() {
+        if (mMediaPlayer != null) {
+            mMediaPlayer.play();
+            vlcButtonPlayPause.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_pause_over_video));
+        }
     }
 
-    @Override
-    protected void onPause() {
-        mMediaPlayer.pause();
-        vlcButtonPlayPause.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_play_over_video));
-        super.onPause();
+    /**
+     * 暂停播放
+     */
+    public void pausePlay() {
+        if (mMediaPlayer != null) {
+            mMediaPlayer.pause();
+            vlcButtonPlayPause.setImageDrawable(getResources().getDrawable(R.drawable.ic_action_play_over_video));
+        }
     }
 
-    @Override
-    protected void onDestroy() {
-        releasePlayer();
-        super.onDestroy();
+    /**
+     * 判断是否正在播放
+     *
+     * @return
+     */
+    public boolean isPlaying() {
+        return mMediaPlayer != null && mMediaPlayer.isPlaying();
+    }
+
+    /**
+     * 保存当前视频播放的这一帧到本地
+     */
+    public void capturePic() {
+        if (TextUtils.equals(Environment.getExternalStorageState(), Environment.MEDIA_MOUNTED)) {
+            File allDir = new File(Environment.getExternalStorageDirectory(), Constant.DIR);
+            if (!allDir.exists() || !allDir.isDirectory()) {
+                allDir.mkdirs();
+            }
+            File screenShotsDir = new File(allDir, Constant.SCREEN_SHOTS);
+            if (!screenShotsDir.exists() || !screenShotsDir.isDirectory()) {
+                screenShotsDir.mkdirs();
+            }
+            if (mTextureView != null) {
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINA);
+                File file = new File(screenShotsDir, dateFormat.format(new Date()) + ".png");
+                if (!file.exists()) {
+                    try {
+                        file.createNewFile();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                Bitmap bmp = mTextureView.getBitmap();
+                FileOutputStream fos = null;
+                try {
+                    fos = new FileOutputStream(file);
+                    bmp.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+                    fos.flush();
+                    fos.close();
+                    Log.e("capture", "capture 7777");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    if (fos != null) {
+                        try {
+                            fos.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        } else {
+            Log.e("capture", "capture failure");
+        }
+    }
+
+    /**
+     * 启动另一个界面，实现全屏播放
+     */
+    public void fullScreen() {
+        Player2Activity.go(getContext(), url);
     }
 
     /*************
@@ -203,26 +312,21 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
     @SuppressWarnings("SuspiciousNameCombination")
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
     private void changeSurfaceSize(boolean message) {
-        int screenWidth = getWindow().getDecorView().getWidth();
-        int screenHeight = getWindow().getDecorView().getHeight();
-
+        int screenWidth = getScreenWidth();
+        int screenHeight = getScreenHeight();
         if (mMediaPlayer != null) {
             final IVLCVout vlcVout = mMediaPlayer.getVLCVout();
             vlcVout.setWindowSize(screenWidth, screenHeight);
         }
-
         double displayWidth = screenWidth, displayHeight = screenHeight;
-
         if (screenWidth < screenHeight) {
             displayWidth = screenHeight;
             displayHeight = screenWidth;
         }
-
         // sanity check
         if (displayWidth * displayHeight <= 1 || mVideoWidth * mVideoHeight <= 1) {
             return;
         }
-
         // compute the aspect ratio
         double aspectRatio, visibleWidth;
         if (mSarDen == mSarNum) {
@@ -234,34 +338,31 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
             visibleWidth = mVideoVisibleWidth * (double) mSarNum / mSarDen;
             aspectRatio = visibleWidth / mVideoVisibleHeight;
         }
-
         // compute the display aspect ratio
         double displayAspectRatio = displayWidth / displayHeight;
-
-        counter ++;
-
+        counter++;
         switch (mCurrentSize) {
             case SURFACE_BEST_FIT:
-                if(counter > 2)
-                    Toast.makeText(this, "Best Fit", Toast.LENGTH_SHORT).show();
+                if (counter > 2)
+                    showToast("Best Fit");
                 if (displayAspectRatio < aspectRatio)
                     displayHeight = displayWidth / aspectRatio;
                 else
                     displayWidth = displayHeight * aspectRatio;
                 break;
             case SURFACE_FIT_HORIZONTAL:
-                Toast.makeText(this, "Fit Horizontal", Toast.LENGTH_SHORT).show();
+                showToast("Fit Horizontal");
                 displayHeight = displayWidth / aspectRatio;
                 break;
             case SURFACE_FIT_VERTICAL:
-                Toast.makeText(this, "Fit Horizontal", Toast.LENGTH_SHORT).show();
+                showToast("Fit Horizontal");
                 displayWidth = displayHeight * aspectRatio;
                 break;
             case SURFACE_FILL:
-                Toast.makeText(this, "Fill", Toast.LENGTH_SHORT).show();
+                showToast("Fill");
                 break;
             case SURFACE_16_9:
-                Toast.makeText(this, "16:9", Toast.LENGTH_SHORT).show();
+                showToast("16:9");
                 aspectRatio = 16.0 / 9.0;
                 if (displayAspectRatio < aspectRatio)
                     displayHeight = displayWidth / aspectRatio;
@@ -269,7 +370,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
                     displayWidth = displayHeight * aspectRatio;
                 break;
             case SURFACE_4_3:
-                Toast.makeText(this, "4:3", Toast.LENGTH_SHORT).show();
+                showToast("4:3");
                 aspectRatio = 4.0 / 3.0;
                 if (displayAspectRatio < aspectRatio)
                     displayHeight = displayWidth / aspectRatio;
@@ -277,7 +378,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
                     displayWidth = displayHeight * aspectRatio;
                 break;
             case SURFACE_ORIGINAL:
-                Toast.makeText(this, "Original", Toast.LENGTH_SHORT).show();
+                showToast("Original");
                 displayHeight = mVideoVisibleHeight;
                 displayWidth = visibleWidth;
                 break;
@@ -286,15 +387,24 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
         // set display size
         int finalWidth = (int) Math.ceil(displayWidth * mVideoWidth / mVideoVisibleWidth);
         int finalHeight = (int) Math.ceil(displayHeight * mVideoHeight / mVideoVisibleHeight);
-
-        SurfaceHolder holder = mSurface.getHolder();
-        holder.setFixedSize(finalWidth, finalHeight);
-
-        ViewGroup.LayoutParams lp = mSurface.getLayoutParams();
+        mSurfaceTexture.setDefaultBufferSize(finalWidth, finalHeight);
+        ViewGroup.LayoutParams lp = mTextureView.getLayoutParams();
         lp.width = finalWidth;
         lp.height = finalHeight;
-        mSurface.setLayoutParams(lp);
-        mSurface.invalidate();
+        mTextureView.setLayoutParams(lp);
+        mTextureView.invalidate();
+    }
+
+    private int getScreenWidth() {
+        Resources resources = this.getResources();
+        DisplayMetrics dm = resources.getDisplayMetrics();
+        return dm.widthPixels;
+    }
+
+    private int getScreenHeight() {
+        Resources resources = this.getResources();
+        DisplayMetrics dm = resources.getDisplayMetrics();
+        return dm.heightPixels;
     }
 
     private void changeSurfaceLayout() {
@@ -309,7 +419,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
         releasePlayer();
         setupControls();
         try {
-            final SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this.getApplicationContext());
+            final SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getContext().getApplicationContext());
             // Create LibVLC
             // TODO: make this more robust, and sync with audio demo
             ArrayList<String> options = new ArrayList<String>(50);
@@ -321,7 +431,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
             else if (networkCaching < 0)
                 networkCaching = 0;
             //options.add("--subsdec-encoding <encoding>");
-              /* CPU intensive plugin, setting for slow devices */
+            /* CPU intensive plugin, setting for slow devices */
             options.add("--audio-time-stretch");
             options.add("--avcodec-skiploopfilter");
             options.add("" + deblocking);
@@ -332,7 +442,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
             options.add("--subsdec-encoding");
 //            options.add(subtitlesEncoding);
             options.add("--stats");
-        /* XXX: why can't the default be fine ? #7792 */
+            /* XXX: why can't the default be fine ? #7792 */
             if (networkCaching > 0)
                 options.add("--network-caching=" + networkCaching);
             options.add("--androidwindow-chroma");
@@ -342,28 +452,28 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
 
             libvlc = new LibVLC(options);
 
-            holder.setKeepScreenOn(true);
+            mTextureView.setKeepScreenOn(true);
 
             // Create media player
             mMediaPlayer = new MediaPlayer(libvlc);
-            holder.setFormat(PixelFormat.RGBX_8888);
-            holder.setKeepScreenOn(true);
+            //mMediaPlayer.setFormat(PixelFormat.RGBX_8888);
             mMediaPlayer.setEventListener(mPlayerListener);
 
             // Set up video output
             final IVLCVout vout = mMediaPlayer.getVLCVout();
             if (!vout.areViewsAttached()) {
-                vout.setVideoView(mSurface);
+                vout.setVideoView(mTextureView);
                 vout.addCallback(this);
                 vout.attachViews();
             }
-            //vout.setSubtitlesView(mSurfaceSubtitles);
+            //vout.setSubtitlesView(mTextureViewSubtitles);
             Uri uri = Uri.parse(media);
             Media m = new Media(libvlc, uri);
             mMediaPlayer.setMedia(m);
             mMediaPlayer.play();
         } catch (Exception e) {
-            Toast.makeText(this, "Error creating player!", Toast.LENGTH_LONG).show();
+            showToast("Error creating player!");
+            e.printStackTrace();
         }
     }
 
@@ -394,18 +504,23 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
         return ret;
     }
 
-    // TODO: handle this cleaner
-    private void releasePlayer() {
+    /**
+     * 释放播放器
+     */
+    public void releasePlayer() {
         if (libvlc == null)
             return;
         mMediaPlayer.stop();
+
         final IVLCVout vout = mMediaPlayer.getVLCVout();
         vout.removeCallback(this);
+
         vout.detachViews();
-        holder = null;
+        mSurfaceTexture = null;
         libvlc.release();
         libvlc = null;
-
+        mMediaPlayer.release();
+        mMediaPlayer = null;
         mVideoWidth = 0;
         mVideoHeight = 0;
     }
@@ -420,11 +535,10 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
     public void onNewLayout(IVLCVout vout, int width, int height, int visibleWidth, int visibleHeight, int sarNum, int sarDen) {
         if (width * height == 0)
             return;
-
         // store video size
         mVideoWidth = width;
         mVideoHeight = height;
-        mVideoVisibleWidth  = visibleWidth;
+        mVideoVisibleWidth = visibleWidth;
         mVideoVisibleHeight = visibleHeight;
         mSarNum = sarNum;
         mSarDen = sarDen;
@@ -442,33 +556,38 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
     }
 
     private static class MyPlayerListener implements MediaPlayer.EventListener {
-        private WeakReference<PlayerActivity> mOwner;
+        private WeakReference<VlcPlayerView> mOwner;
 
-        public MyPlayerListener(PlayerActivity owner) {
-            mOwner = new WeakReference<PlayerActivity>(owner);
+        public MyPlayerListener(VlcPlayerView owner) {
+            mOwner = new WeakReference<VlcPlayerView>(owner);
         }
 
         @Override
         public void onEvent(MediaPlayer.Event event) {
-            PlayerActivity player = mOwner.get();
-
-            switch(event.type) {
-                case MediaPlayer.Event.EndReached:
-                    player.releasePlayer();
-                    break;
-                case MediaPlayer.Event.Playing:
-                case MediaPlayer.Event.Paused:
-                case MediaPlayer.Event.Stopped:
-                default:
-                    break;
+            VlcPlayerView player = mOwner.get();
+            if (player != null) {
+                switch (event.type) {
+                    case MediaPlayer.Event.EndReached:
+                        player.releasePlayer();
+                        break;
+                    case MediaPlayer.Event.Playing:
+                    case MediaPlayer.Event.Paused:
+                    case MediaPlayer.Event.Stopped:
+                    default:
+                        break;
+                }
             }
         }
     }
 
-    @Override
     public void onHardwareAccelerationError(IVLCVout vout) {
         // Handle errors with hardware acceleration
         this.releasePlayer();
-        Toast.makeText(this, "Error with hardware acceleration", Toast.LENGTH_LONG).show();
+        showToast("Error with hardware acceleration");
     }
+
+    private void showToast(String msg) {
+        Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
+    }
+
 }
