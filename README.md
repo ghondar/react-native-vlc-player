@@ -31,6 +31,20 @@ dependencies {
     implementation project(':react-native-vlc-player')
 }
 ```
+
+##### Split APK for each CPU type `android/app/build.gradle`
+```Java
+    splits {
+        abi {
+            enable true
+            reset()
+            include "armeabi-v7a", "x86", "arm64-v8a", "x86_64"
+            universalApk true
+        }
+    }
+// This is a must due to the large file size for all VLCLibs Included
+```
+
 ##### Register module in `MainApplication.java`
 ```Java
 import com.ghondar.vlcplayer.VLCPlayerPackage;   // <--- import
