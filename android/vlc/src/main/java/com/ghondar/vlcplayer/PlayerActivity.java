@@ -22,7 +22,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-import com.vlcplayer.R;
+import com.ghondar.vlcplayer.R;
 
 import org.videolan.libvlc.IVLCVout;
 import org.videolan.libvlc.LibVLC;
@@ -69,7 +69,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
     private static final int SURFACE_4_3 = 5;
     private static final int SURFACE_ORIGINAL = 6;
 
-    private int mCurrentSize = SURFACE_BEST_FIT;
+    private int mCurrentSize = 6;
 
     /*************
      * Activity
@@ -120,6 +120,15 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
         }
         getWindow().setAttributes(attrs);
     }
+	
+	public void ChangeSize() {
+		if (mCurrentSize < SURFACE_ORIGINAL) {
+			mCurrentSize++;
+		} else {
+			mCurrentSize = 6;
+		}
+		changeSurfaceSize(true);
+	}
 
     private void setupControls() {
         // PLAY PAUSE
@@ -142,7 +151,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
                 if (mCurrentSize < SURFACE_ORIGINAL) {
                     mCurrentSize++;
                 } else {
-                    mCurrentSize = 0;
+                    mCurrentSize = 6;
                 }
                 changeSurfaceSize(true);
             }
@@ -155,6 +164,7 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
             public void run() {
                 vlcOverlay.setVisibility(View.GONE);
                 toggleFullscreen(true);
+				ChangeSize();
             }
         };
         final long timeToDisappear = 3000;
@@ -283,8 +293,8 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
         }
 
         // set display size
-        int finalWidth = (int) Math.ceil(displayWidth * mVideoWidth / mVideoVisibleWidth);
-        int finalHeight = (int) Math.ceil(displayHeight * mVideoHeight / mVideoVisibleHeight);
+        int finalWidth = (int) displayWidth;
+        int finalHeight = (int)displayHeight;
 
         SurfaceHolder holder = mSurface.getHolder();
         holder.setFixedSize(finalWidth, finalHeight);
@@ -312,34 +322,18 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
             // Create LibVLC
             // TODO: make this more robust, and sync with audio demo
             ArrayList<String> options = new ArrayList<String>(50);
-            int deblocking = getDeblocking(-1);
+            int deblocking = getDeblocking(3);
 
             int networkCaching = pref.getInt("network_caching_value", 0);
-            if (networkCaching > 60000)
-                networkCaching = 60000;
-            else if (networkCaching < 0)
-                networkCaching = 0;
-            //options.add("--subsdec-encoding <encoding>");
-              /* CPU intensive plugin, setting for slow devices */
-            options.add("--audio-time-stretch");
-            options.add("--avcodec-skiploopfilter");
-            options.add("" + deblocking);
-            options.add("--avcodec-skip-frame");
-            options.add("0");
-            options.add("--avcodec-skip-idct");
-            options.add("0");
-            options.add("--subsdec-encoding");
-//            options.add(subtitlesEncoding);
-            options.add("--stats");
-        /* XXX: why can't the default be fine ? #7792 */
-            if (networkCaching > 0)
-                options.add("--network-caching=" + networkCaching);
-            options.add("--androidwindow-chroma");
-            options.add("RV32");
+			
+			options.add("--file-caching=2000");
+			options.add("-vvv");
+			options.add("--codec=avcodec");
+			options.add(":network-caching=150");
+			options.add(":clock-jitter=0");
+			options.add(":clock-syncro=0");
 
-            options.add("-vv");
-
-            libvlc = new LibVLC(options);
+            libvlc = new LibVLC(this.getApplicationContext(), options);
 
             holder.setKeepScreenOn(true);
 
@@ -415,7 +409,6 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
 
     private MediaPlayer.EventListener mPlayerListener = new MyPlayerListener(this);
 
-    @Override
     public void onNewLayout(IVLCVout vout, int width, int height, int visibleWidth, int visibleHeight, int sarNum, int sarDen) {
         if (width * height == 0)
             return;
@@ -464,7 +457,6 @@ public class PlayerActivity extends Activity implements IVLCVout.Callback {
         }
     }
 
-    @Override
     public void onHardwareAccelerationError(IVLCVout vout) {
         // Handle errors with hardware acceleration
         this.releasePlayer();
