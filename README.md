@@ -11,7 +11,7 @@
 ##### Android
 
 ##### Install via npm
-`npm i react-native-vlc-player --save`
+`npm i https://github.com/Rob2k9/react-native-vlc-player`
 
 ##### Add dependency to `android/settings.gradle`
 ```
@@ -28,20 +28,13 @@ project(':react-native-vlc-player').projectDir = new File(rootProject.projectDir
 ...
 dependencies {
     ...
-    compile project(':react-native-vlc-player')
+    implementation project(':react-native-vlc-player')
 }
 ```
 ##### Register module in `MainApplication.java`
 ```Java
-import com.ghondar.vlcplayer.*;  // <--- import
-
-@Override
- protected List<ReactPackage> getPackages() {
-   return Arrays.<ReactPackage>asList(
-      new VLCPlayerPackage(),  // <------- here
-      new MainReactPackage()
-   );
- }
+import com.ghondar.vlcplayer.VLCPlayerPackage;   // <--- import
+// you do not need to do anything else int his file thanks to react auto linking 
 ```
 
 #### Usage
