@@ -1,12 +1,17 @@
 {
   "name": "react-native-vlc-player",
-  "version": "0.1.0",
-  "description": "VLC Player for react-native",
+  "title": "VLC Player for react-native",
+  "version": "0.2.0",
+  "description": "TODO",
   "main": "index.js",
   "scripts": {
-    "test": "npm test"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": "git@github.com:ghondar/react-native-vlc-player.git",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ghondar/react-native-vlc-player.git",
+    "baseUrl": "https://github.com/ghondar/react-native-vlc-player"
+  },
   "keywords": [
     "react-native",
     "android",
@@ -14,6 +19,22 @@
     "player",
     "video"
   ],
-  "author": "abgv9221@gmail.com",
-  "license": "MIT"
+  "author": {
+    "name": "Anthony Bryan Gavilan Vinces",
+    "email": "abgv9221@gmail.com"
+  },
+  "license": "MIT",
+  "licenseFilename": "LICENSE",
+  "readmeFilename": "README.md",
+  "peerDependencies": {
+    "react": "16.8.1",
+    "react-native": ">=0.59.0-rc.0 <1.0.x"
+  },
+  "devDependencies": {
+    "babel-eslint": "10.0.3",
+    "eslint": "6.2.2",
+    "eslint-plugin-react": "7.14.3",
+    "react": "16.8.3",
+    "react-native": "0.59.10"
+  }
 }

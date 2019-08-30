@@ -1,73 +1,73 @@
-### React-Native-VLC-Player
+# react-native-vlc-player
 
-> VLC Player for react-native
+## Getting started
 
-*Only Android support now.*
+`$ npm install react-native-vlc-player --save`
 
-![](https://media.giphy.com/media/l4hLFPgXI7ipAAMGk/giphy.gif)
+## Dependencies
 
-#### Integrate
+`$ npm install react-native-vector-icons --save`
 
-##### Android
+### Manual installation
 
-##### Install via npm
-`npm i react-native-vlc-player --save`
+Copy Ionicons.ttf from `node_modules/react-native-vector-icons/Fonts` to `android/app/src/main/assets/fonts`
 
-##### Add dependency to `android/settings.gradle`
-```
+
+#### Android
+
+1. Insert the following lines inside the dependencies block in `android/app/build.gradle`:
+```Diff
 ...
-include ':libvlc'
-project(':libvlc').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-vlc-player/android/libvlc')
-
-include ':react-native-vlc-player'
-project(':react-native-vlc-player').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-vlc-player/android/vlc')
-```
-
-##### Add `android/app/build.gradle`
-```
-...
-dependencies {
-    ...
-    compile project(':react-native-vlc-player')
+allprojects {
+	...
+	dependencies {
+			...
++      maven {
++        url("https://jitpack.io")
++      }
+	}
 }
 ```
-##### Register module in `MainApplication.java`
-```Java
-import com.ghondar.vlcplayer.*;  // <--- import
 
-@Override
- protected List<ReactPackage> getPackages() {
-   return Arrays.<ReactPackage>asList(
-      new VLCPlayerPackage(),  // <------- here
-      new MainReactPackage()
-   );
- }
-```
 
-#### Usage
+## Usage
+```javascript
+import React, {Component} from 'react';
+import {
+  StyleSheet,
+  View
+} from 'react-native';
+// Import library
+import VlcPlayer from 'react-native-vlc-player';
 
-```Javascript
-import React, { AppRegistry, StyleSheet, Component, View, Text, TouchableHighlight } from 'react-native'
+export default class App extends Component {
+  vlcplayer = React.createRef();
 
-import { play } from 'react-native-vlc-player'
-
-class Example extends Component {
-  constructor(props, context) {
-    super(props, context)
+  componentDidMount() {
+    console.log(this.vlcplayer)
   }
 
   render() {
-
     return (
-      <View style={styles.container}>
-
-        <TouchableHighlight
-          onPress={() => { play('file:///storage/emulated/0/example.avi') }}>
-            <Text >Play Video!</Text>
-        </TouchableHighlight>
-
+      <View
+        style={[
+          styles.container
+        ]}>
+        <VlcPlayer
+          ref={this.vlcplayer}
+          style={{
+            width: 300,
+            height: 200,
+          }}
+          paused={false}
+          autoplay={true}
+          source={{
+            uri: 'file:///storage/emulated/0/Download/example.mp4',
+            autoplay: true,
+            initOptions: ['--codec=avcodec'],
+          }}  />
       </View>
-    )
+    );
   }
 }
 
@@ -76,12 +76,37 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5FCFF',
-  }
+    backgroundColor: 'grey',
+  },
 });
-
-AppRegistry.registerComponent('example', () => Example);
 ```
 
-#### LICENSE
-MIT
+## Props
+```javascript
+<VLCPlayer
+	ref='vlcplayer'
+	paused={this.state.paused}
+	style={styles.vlcplayer}
+	source={{uri: this.props.uri, initOptions: ['--codec=avcodec']}}
+	onVLCProgress={this.onProgress.bind(this)}
+	onVLCEnded={this.onEnded.bind(this)}
+	onVLCStopped={this.onEnded.bind(this)}
+	onVLCPlaying={this.onPlaying.bind(this)}
+	onVLCBuffering={this.onBuffering.bind(this)}
+	onVLCPaused={this.onPaused.bind(this)}
+/>
+```
+
+## Static Methods
+
+`seek(seconds)`
+
+```
+this.refs['vlcplayer'].seek(0.333);
+```
+
+`snapshot(path)`
+
+```
+this.refs['vlcplayer'].snapshot(path);
+```

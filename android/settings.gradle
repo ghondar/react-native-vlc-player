@@ -1,3 +1,0 @@
-rootProject.name = 'vlcplayer'
-
-include ':vlc', ':libvlc'

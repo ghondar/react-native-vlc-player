@@ -1,6 +1,1 @@
-# Android
-local.properties
-.idea
-.gradle
-build
-*.iml
+example
