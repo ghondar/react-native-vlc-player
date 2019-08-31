@@ -20,9 +20,9 @@ Copy Ionicons.ttf from `node_modules/react-native-vector-icons/Fonts` to `androi
 ...
 allprojects {
     repositories {
-
+...
 	maven { url("https://jitpack.io") }
-
+...
     }
 }
 ```
