@@ -89,7 +89,7 @@ public class VlcPlayerView extends FrameLayout implements IVLCVout.Callback, Lif
     private static final int SURFACE_4_3 = 5;
     private static final int SURFACE_ORIGINAL = 6;
 
-    private int mCurrentSize = SURFACE_BEST_FIT;
+    private int mCurrentSize = SURFACE_FILL;
     private Media media;
     private boolean autoPlay;
 
@@ -114,28 +114,8 @@ public class VlcPlayerView extends FrameLayout implements IVLCVout.Callback, Lif
             final SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getContext().getApplicationContext());
             // Create LibVLC
             ArrayList<String> options = new ArrayList<>(50);
-            int deblocking = getDeblocking(-1);
 
-            int networkCaching = pref.getInt("network_caching_value", 0);
-            if (networkCaching > 60000) networkCaching = 60000;
-            else if (networkCaching < 0) networkCaching = 0;
-            options.add("--audio-time-stretch");
-            options.add("--avcodec-skiploopfilter");
-            options.add("" + deblocking);
-            options.add("--avcodec-skip-frame");
-            options.add("0");
-            options.add("--avcodec-skip-idct");
-            options.add("0");
-            options.add("--subsdec-encoding");
-            options.add("--stats");
-            if (networkCaching > 0) options.add("--network-caching=" + networkCaching);
-            options.add("--androidwindow-chroma");
-            options.add("RV32");
-
-            options.add("-vv");
-
-            libvlc = new LibVLC(options);
-
+            libvlc = new LibVLC(getContext().getApplicationContext(), options);
             holder.setKeepScreenOn(true);
 
             // Create media player
@@ -156,6 +136,12 @@ public class VlcPlayerView extends FrameLayout implements IVLCVout.Callback, Lif
         }
         Uri uri = Uri.parse(filePath);
         media = new Media(libvlc, uri);
+		int cache = 150;
+		media.addOption(":network-caching=" + cache);
+		media.addOption(":file-caching=" + cache);
+		media.addOption(":live-cacheing=" + cache);
+		media.addOption(":sout-mux-caching=" + cache);
+		media.addOption(":codec=mediacodec,iomx,all");
         mMediaPlayer.setMedia(media);
         if (autoPlay) {
             mMediaPlayer.play();
@@ -270,6 +256,7 @@ public class VlcPlayerView extends FrameLayout implements IVLCVout.Callback, Lif
                 break;
         }
 
+
         // set display size
         int finalWidth = (int) Math.ceil(displayWidth * mVideoWidth / mVideoVisibleWidth);
         int finalHeight = (int) Math.ceil(displayHeight * mVideoHeight / mVideoVisibleHeight);
@@ -329,7 +316,6 @@ public class VlcPlayerView extends FrameLayout implements IVLCVout.Callback, Lif
         mMediaPlayer.setVolume(volume);
     }
 
-    @Override
     public void onNewLayout(IVLCVout vout, int width, int height, int visibleWidth, int visibleHeight, int sarNum, int sarDen) {
         if (width * height == 0) return;
 
@@ -349,7 +335,6 @@ public class VlcPlayerView extends FrameLayout implements IVLCVout.Callback, Lif
 
     }
 
-    @Override
     public void onHardwareAccelerationError(IVLCVout vout) {
         // Handle errors with hardware acceleration
         this.releasePlayer();
