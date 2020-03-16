@@ -1,7 +1,7 @@
 {
   "name": "react-native-vlc-player",
   "title": "VLC Player for react-native",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "TODO",
   "main": "index.js",
   "scripts": {
