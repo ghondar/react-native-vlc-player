@@ -15,17 +15,15 @@ Copy Ionicons.ttf from `node_modules/react-native-vector-icons/Fonts` to `androi
 
 #### Android
 
-1. Insert the following lines inside the dependencies block in `android/app/build.gradle`:
+1. Insert the following lines inside the repositories block in `android/build.gradle`:
 ```Diff
 ...
 allprojects {
-	...
-	dependencies {
-			...
-+      maven {
-+        url("https://jitpack.io")
-+      }
-	}
+    repositories {
+...
+	maven { url("https://jitpack.io") }
+...
+    }
 }
 ```
 
