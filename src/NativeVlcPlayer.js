@@ -77,9 +77,14 @@ export default class NativeVlcPlayer extends Component {
 
   render() {
     const {
-      source
+      source,
+      currentSize,
+      autoplay
     } = this.props
     source.initOptions = source.initOptions || []
+    source.autoplay = source.autoplay || autoplay || false
+    source.currentSize = currentSize || 0
+
     // repeat the input media
     const nativeProps = Object.assign({}, this.props)
     Object.assign(nativeProps, {

@@ -49,8 +49,9 @@ public class VlcPlayerModule extends ViewGroupManager<VlcPlayerView> {
     @ReactProp(name = PROP_SOURCE)
     public void setPath(final VlcPlayerView playerView, ReadableMap map) {
         String path = map.getString("uri");
+        int currentSize = map.getInt("currentSize");
         boolean autoPlay = map.getBoolean("autoplay");
-        Log.d("data:", path);
+        playerView.setCurrentSize(currentSize);
         playerView.setAutoPlay(autoPlay);
         playerView.setFilePath(path);
     }

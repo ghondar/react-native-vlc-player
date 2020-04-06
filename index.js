@@ -15,6 +15,13 @@ import NativeVlcPlayer from './src/NativeVlcPlayer'
 import * as Orientation from './src/Orientation'
 
 export const DeviceOrientation = Orientation.DeviceOrientation
+export const SURFACE_BEST_FIT = 0;
+export const SURFACE_FIT_HORIZONTAL = 1;
+export const SURFACE_FIT_VERTICAL = 2;
+export const SURFACE_FILL = 3;
+export const SURFACE_16_9 = 4;
+export const SURFACE_4_3 = 5;
+export const SURFACE_ORIGINAL = 6;
 
 class VlcPlayer extends Component {
   static propTypes = {

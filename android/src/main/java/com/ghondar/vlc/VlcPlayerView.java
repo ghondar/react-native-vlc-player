@@ -297,6 +297,10 @@ public class VlcPlayerView extends FrameLayout implements IVLCVout.Callback, Lif
         this.autoPlay = autoPlay;
     }
 
+    public void setCurrentSize(int currentSize) {
+        mCurrentSize = currentSize;
+    }
+
     /**
      * Play or pause the media.
      */

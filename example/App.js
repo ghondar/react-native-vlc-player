@@ -9,39 +9,35 @@
  */
 
 import React, {Component} from 'react';
-import {
-  StyleSheet,
-  View
-} from 'react-native';
+import {StyleSheet, View} from 'react-native';
 
-import VlcPlayer from 'react-native-vlc-player';
+import VlcPlayer, {SURFACE_16_9} from 'react-native-vlc-player';
 
 export default class App extends Component {
   vlcplayer = React.createRef();
 
   componentDidMount() {
-    console.log(this.vlcplayer)
+    console.log(this.vlcplayer);
   }
 
   render() {
     return (
-      <View
-        style={[
-          styles.container
-        ]}>
+      <View style={[styles.container]}>
         <VlcPlayer
           ref={this.vlcplayer}
           style={{
             width: 300,
             height: 200,
           }}
+          currentSize={SURFACE_16_9}
           paused={false}
           autoplay={true}
           source={{
             uri: 'file:///storage/emulated/0/Download/example.mp4',
             autoplay: true,
             initOptions: ['--codec=avcodec'],
-          }}  />
+          }}
+        />
       </View>
     );
   }
