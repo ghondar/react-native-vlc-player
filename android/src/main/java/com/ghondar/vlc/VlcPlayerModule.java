@@ -19,6 +19,7 @@ public class VlcPlayerModule extends ViewGroupManager<VlcPlayerView> {
     public static final String PROP_PAUSED = "paused";
     public static final String PROP_VOLUME = "volume";
     public static final String PROP_RESIZE = "resize";
+    public static final String PROP_SPEED = "speed";
 
     @Override
     public String getName() {
@@ -65,6 +66,9 @@ public class VlcPlayerModule extends ViewGroupManager<VlcPlayerView> {
     public void setSeek(final VlcPlayerView playerView, float seek) {
         playerView.seek(seek);
     }
+
+    @ReactProp(name = PROP_SPEED)
+    public void setSpeed(final VlcPlayerView playerView, float speed) { playerView.setRate(speed); }
 
     @ReactProp(name = PROP_PAUSED)
     public void setPaused(final VlcPlayerView playerView, boolean paused) {

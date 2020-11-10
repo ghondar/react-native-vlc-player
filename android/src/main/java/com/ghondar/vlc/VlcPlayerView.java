@@ -329,6 +329,14 @@ public class VlcPlayerView extends FrameLayout implements IVLCVout.Callback, Lif
         mMediaPlayer.setTime((long) (mMediaPlayer.getLength() * seek));
     }
 
+    public void setRate(float rate) {
+        mMediaPlayer.setRate(rate);
+    }
+
+    public float getRate() {
+        return mMediaPlayer.getRate();
+    }
+
     public void setVolume(int volume) {
         mMediaPlayer.setVolume(volume);
     }

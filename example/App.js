@@ -29,11 +29,12 @@ export default class App extends Component {
             width: 300,
             height: 200,
           }}
+          speed={2}
           currentSize={SURFACE_16_9}
           paused={false}
           autoplay={true}
           source={{
-            uri: 'file:///storage/emulated/0/Download/example.mp4',
+            uri: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_10MB.mp4',
             autoplay: true,
             initOptions: ['--codec=avcodec'],
           }}
